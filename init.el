@@ -177,6 +177,8 @@
 
 (use-package magit
   :bind (("C-x g" . magit-status)))
+(setenv "GIT_ASKPASS" "git-gui--askpass")
+
 
 ;; ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 ;;
