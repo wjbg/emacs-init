@@ -1,3 +1,15 @@
+;; ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+;;
+;; Emacs Init File
+;; Author: Wouter Grouve, University of Twente
+;; License: MIT
+;;
+;; ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+
+;;
+;; Generic settings
+;; ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 ;; Package sources
 (package-initialize)
@@ -16,6 +28,7 @@
 (setq use-package-always-ensure t)
 
 ;; Directories
+(setq home-dir (concat (getenv "USERPROFILE") "\\"))
 (setq work-dir (concat (getenv "USERPROFILE") "\\Documents\\Work\\"))
 (setq literature-dir (concat (getenv "USERPROFILE") "\\Documents\\Literature\\"))
 (setq program-files (concat (getenv "ProgramFiles") "\\"))
@@ -39,11 +52,9 @@
 (setq custom-file (make-temp-file "emacs-custom"))
 
 
-;; ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 ;;
 ;; Look and Feel
-;;
-;; ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+;; ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 ;; UTF-8 as the default encoding
 (set-language-environment "UTF-8")
@@ -61,12 +72,12 @@
 ;; Here, sentences end with a . and a single space.
 (setq sentence-end-double-space nil)
 
-;; Theme
+;; Something for the eye
 (use-package material-theme
   :config
   (load-theme 'material t))
 
-;; Set a decent font
+;; And something additional for the eye
 (when (member "DejaVu Sans Mono" (font-family-list))
   (set-face-attribute 'default nil :font "DejaVu Sans Mono-11"))
 (setq org-fontify-whole-heading-line t)
@@ -86,21 +97,23 @@
   :diminish visual-line-mode
   :diminish eldoc-mode
   :diminish auto-fill-function
-  :diminish org-indent-mode)
+  :diminish org-indent-mode
+  :diminish all-the-icons-dired-mode
+  :diminish which-key-mode)
 
-;; Flash the mode line instead of ringing the bell
+;; Don't ring the annoying bell, but do notify me dear
 (use-package mode-line-bell
   :config (mode-line-bell-mode))
 
-;; Where is my cursor
+;; Where is my cursor at?
 (use-package beacon
+  :defer 2
   :bind ("C-c b" . beacon-blink)
   :config (beacon-mode 1))
 
 ;; I like shiny things
 (use-package all-the-icons
-  :init
-  (setq inhibit-compacting-font-caches t))
+  :init (setq inhibit-compacting-font-caches t))
 
 ;; Smooth operator
 (global-set-key "\M-n" "\C-u1\C-v")
@@ -130,6 +143,13 @@
   :bind (("M-o" . ace-window)
          ("M-O" . ace-swap-window)))
 
+;; Which key should I press now?
+(use-package which-key
+  :defer 10
+  :config
+  (which-key-mode)
+  )
+
 ;; Dashboard
 (use-package dashboard
   :init
@@ -145,43 +165,95 @@
   :config
   (dashboard-setup-startup-hook))
 
-;; Selectrum is an incremental narrowing solution
+;; Selectrum is a lean incremental narrowing framework
 (use-package selectrum
   :init
   (selectrum-mode))
 
-;; Prescient enables saving history, and selectrum-prescient
-;; (obviously) integrates the two.
+;; Prescient enables saving history
 (use-package prescient
-  :config
-  (prescient-persist-mode)
-  (setq prescient-history-length 1000))
-
-(use-package selectrum-prescient
   :after selectrum
   :config
-  (selectrum-prescient-mode))
+    (selectrum-prescient-mode +1)
+    (prescient-persist-mode +1))
 
-;; Powerline
+;; Consult helps finding stuff
+(use-package consult
+  :ensure t
+  :bind (("C-c o" . consult-outline)
+         ("C-x b" . consult-buffer)
+         ("C-x r x" . consult-register)
+         ("C-x r b" . consult-bookmark)
+         ("M-g o" . consult-ouline)
+         ("M-y" . consult-yank-pop))
+  :init
+  (fset 'multi-occur #'consult-multi-occur))
+
+;; Helpful information in the mini-buffer
+(use-package marginalia
+  :init
+  (marginalia-mode)
+  (setq marginalia-annotators
+        '(marginalia-annotators-heavy marginalia-annotators-light)))
+
+;; Better help
+(use-package helpful
+  :defer 30
+  :config
+  (global-set-key (kbd "C-h f") #'helpful-callable)
+  (global-set-key (kbd "C-h v") #'helpful-variable)
+  (global-set-key (kbd "C-h k") #'helpful-key)
+
+  ;; Lookup the current symbol at point
+  (global-set-key (kbd "C-c C-d") #'helpful-at-point)
+
+  ;; Look up *F*unctions (excludes macros)
+  (global-set-key (kbd "C-h F") #'helpful-function)
+
+  ;; Look up *C*ommands.
+  (global-set-key (kbd "C-h C") #'helpful-command)
+  )
+
+;; Powerline. Just because it looks better.
 (use-package powerline
   :init
   (powerline-default-theme))
 
-;; Yasnippet
-(use-package yasnippet
-  :defer 5
-  :diminish yas-minor-mode
-  :config (yas-global-mode))
+;; Helpful stuff from crux
+(use-package crux
+  :config
+  (global-set-key (kbd "C-k") #'crux-smart-kill-line)
+  (global-set-key (kbd "C-a") #'crux-move-beginning-of-line)
+  (global-set-key (kbd "S-<RET>") #'crux-smart-open-line)
+  (global-set-key (kbd "C-S-<RET>") #'crux-smart-open-line-above)
+  (global-set-key (kbd "C-^") #'crux-top-join-line))
 
-(use-package yasnippet-snippets
-  :after yasnippet)
+;; This is useful as well
+(use-package expand-region
+  :bind ("C-=" . er/expand-region))
+
+;; Feel like a God, act like a God!
+(use-package god-mode
+  :config
+  (global-set-key (kbd "<escape>") #'god-local-mode)
+  (define-key god-local-mode-map (kbd ".") #'repeat)
+  (define-key god-local-mode-map (kbd "i") #'god-local-mode)
+
+  ;; Change cursor to indicate
+  (defun my-god-mode-update-cursor ()
+    (if (or god-local-mode buffer-read-only)
+       (set-cursor-color "lime green")
+      (set-cursor-color "dark orange")))
+
+  (add-hook 'god-mode-enabled-hook #'my-god-mode-update-cursor)
+  (add-hook 'god-mode-disabled-hook #'my-god-mode-update-cursor)
+  (god-mode)
+  )
 
 
-;; ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 ;;
 ;; File system tools
-;;
-;; ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+;; ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 ;; Set some proper defaults
 (setq dired-dwim-target t) ;; allows copy to other buffer
@@ -190,6 +262,7 @@
 (setq ls-lisp-use-insert-directory-program nil)
 (setq ls-lisp-format-time-list '("%Y-%m-%d %H:%M" "%Y-%m-%d %H:%M"))
 (setq ls-lisp-use-localized-time-format t)
+(add-hook 'dired-mode-hook #'dired-hide-details-mode)
 
 ;; Use native ls
 (setq ls-lisp-use-insert-directory-program t)
@@ -201,13 +274,13 @@
   :config
   (dired-quick-sort-setup))
 
-;; Fancy icons
+;; Fancy icons because I like shiny stuff
 (use-package all-the-icons-dired
   :defer t
   :init
   (add-hook 'dired-mode-hook 'all-the-icons-dired-mode))
 
-;; Some handy commands.
+;; Some handy commands
 (defun dired-sumatraPDF () (interactive)
        (setq fn (dired-get-filename))
        (setq sumatra (concat program-files "SumatraPDF\\sumatraPDF.exe"))
@@ -221,16 +294,16 @@
        (let ((proc (start-process "cmd" nil "cmd.exe" "/C" "start" "cmd.exe")))
 	 (set-process-query-on-exit-flag proc nil)))
 
+;; In case I fuck up and ruin my hard work
 (use-package magit
   :defer t
   :init (setenv "GIT_ASKPASS" "git-gui--askpass")
   :bind (("C-x g" . magit-status)))
 
-;; ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
 ;;
 ;; Writing stuff
-;;
-;; ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+;; ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 ;; Splelling is hard. Let's get some hlep.
 (use-package ispell
@@ -277,6 +350,7 @@
   :bind (("C-c w" . define-word-at-point)
 	 ("C-c W" . define-word)))
 
+;; Markdown mode
 (use-package markdown-mode
   :defer t
   :commands (markdown-mode gfm-mode)
@@ -285,13 +359,24 @@
          ("\\.markdown\\'" . markdown-mode))
   :init (setq markdown-command "multimarkdown"))
 
+;; Create a scratch buffer in the same mode as I am working in
+(use-package scratch)
 
-;; ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+;; I don't like typing stuff over and over again...
+(use-package yasnippet
+  :defer 5
+  :diminish yas-minor-mode
+  :config (yas-global-mode))
+
+(use-package yasnippet-snippets
+  :after yasnippet)
+
+
 ;;
 ;; Org mode
-;;
-;; ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+;; ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+;; Let's get organized... Though mostly used for writing
 (use-package org
   :mode("\\.org" . org-mode)
   :defer t
@@ -300,7 +385,7 @@
 	   (setq org-image-actual-width 300) ;; images inline
 	   (setq org-hide-leading-stars t)) ;; hide stars
 
-           ;; make latex work properly
+           ;; make LaTex work properly
            (setq org-latex-pdf-process '("latexmk -bibtex -pdf -f %f"))
            (setq org-format-latex-options (plist-put org-format-latex-options :scale 1.5))
 	   (setq org-export-allow-bind-keywords t)
@@ -337,6 +422,7 @@
 	      (latex . t)
 	      (jupyter . t))))
 
+;; Pretty bullets, I like shiny things...
 (use-package org-bullets
   :defer t
   :init
@@ -347,15 +433,14 @@
 (require 'ox-latex)
 
 
-;; ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 ;;
 ;; Elfeed
-;;
-;; ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+;; ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+;; Stay informed
 (use-package elfeed
   :defer t
-  :bind ("C-x w" . elfeed)
+  :bind ("C-c e" . elfeed)
   :config
   (setq elfeed-feeds
 	'(("http://rss.sciencedirect.com/publication/science/1359835X" Comp.A)
@@ -370,23 +455,22 @@
   (elfeed-goodies/setup))
 
 
-;; ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 ;;
 ;; Ebib
-;;
-;; ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+;; ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+;; Reference management
 (use-package ebib
   :defer t
   :config
   (setq ebib-preload-bib-files (quote ((concat literature-dir "references.bib")))))
 
 
-;; ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 ;;
 ;; Deft
-;;
-;; ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+;; ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+;; Store stuff in a way I can actually recover it...
 (use-package deft
   :defer t
   :bind ("C-c d" . deft)
@@ -404,11 +488,9 @@
 	  (advice-add 'deft-new-file-named :filter-args #'bjm-deft-strip-spaces))
 
 
-;; ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 ;;
 ;; Projectile and dumb-jump
-;;
-;; ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+;; ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 (use-package projectile
   :defer t
@@ -424,11 +506,11 @@
   (add-hook 'xref-backend-functions #'dumb-jump-xref-activate))
 
 
-;; ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 ;;
 ;; Python
-;;
-;; ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+;; ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+;; Python editing environment
 (use-package elpy
   :ensure t
   :defer t
@@ -449,11 +531,12 @@
              jupyter-run-repl
              jupyter-server-list-kernels))
 
+;; Anaconda environment management
 (use-package conda
   :init
-  (setq conda-env-home-directory (expand-file-name "c:/Users/grouvewjb/Anaconda3"))
+  (setq conda-env-home-directory (expand-file-name (concat home-dir "Anaconda3")))
   :config
-  (custom-set-variables '(conda-anaconda-home "c:/Users/grouvewjb/Anaconda3"))
+  (custom-set-variables '(conda-anaconda-home (concat home-dir "Anaconda3")))
   (conda-env-initialize-interactive-shells)
   (conda-env-initialize-eshell)
   (conda-env-autoactivate-mode t))
@@ -467,11 +550,11 @@
   (org-babel-jupyter-aliases-from-kernelspecs))
 
 
-;; ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 ;;
 ;; Matlab
-;;
-;; ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+;; ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+;; Sometimes I need to edit Matlab files, why not use a proper editor
 (use-package matlab
   :defer t
   :ensure matlab-mode
