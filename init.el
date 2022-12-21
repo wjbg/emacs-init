@@ -38,19 +38,20 @@
 (load-file "~/.emacs.d/wg-functions.el")
 
 ;; Find configuration file
-(defun find-config ()
+(defun wg/find-config ()
   "Edit init.el"
   (interactive)
   (find-file "~/.emacs.d/init.el"))
-(global-set-key (kbd "C-c I") 'find-config)
+(global-set-key (kbd "C-c I") 'wg/find-config)
 
 ;; Find passwords file
 (custom-set-variables '(epg-gpg-program  (concat program-files-x86 "gnupg\\bin\\gpg.exe")))
-(defun find-passwords ()
-  "Edit init.el"
+(defun wg/find-passwords ()
+  "Open password file.el"
   (interactive)
   (find-file (concat work-dir "private/passwords.org.gpg")))
-(global-set-key (kbd "C-c P") 'find-passwords)
+(global-set-key (kbd "C-c P") 'wg/find-passwords)
+
 
 ;; Prevent emacs from poluting the init file with customizations
 (setq custom-file (make-temp-file "emacs-custom"))
@@ -92,7 +93,7 @@
 ;; Here, sentences end with a . and a single space.
 (setq sentence-end-double-space nil)
 
-;; Something for the eye
+;; Something for the eye - Theme
 (use-package emacs
   :init
   (setq modus-themes-bold-constructs t
@@ -115,7 +116,7 @@
   (load-theme 'modus-vivendi)
   :bind ("<f5>" . modus-themes-toggle))
 
-;; And something additional for the eye
+;; And something additional for the eye - Fonts
 (set-face-attribute 'default nil :font "Hack-11")
 (set-face-attribute 'fixed-pitch nil :font "Hack-11")
 (set-face-attribute 'variable-pitch nil :font "Cantarell-12")
@@ -123,12 +124,13 @@
 ;; Hightlight current line
 (global-hl-line-mode t)
 
-;; In God's name, what am I doing?
+;; In God's name, what am I doing? - Frame Title
 (setq frame-title "Hey sunshine, you are working on a file called ")
 (setq-default frame-title-format (concat frame-title "%b" ". Keep going!"))
 
-;; Don't ring the annoying bell, but do notify me dear
+;; Don't ring the annoying bell, but do notify me.
 (use-package mode-line-bell
+  :defer t
   :config (mode-line-bell-mode))
 
 ;; I like shiny things
@@ -136,25 +138,16 @@
   :diminish all-the-icons-dired-mode
   :init (setq inhibit-compacting-font-caches t))
 
-;; Smooth operator
-(global-set-key "\M-n" "\C-u1\C-v")
-(global-set-key "\M-p" "\C-u1\M-v")
-
-;; And some proper jumping
-(use-package jump-char
-  :bind
-  (("C-c f" . jump-char-forward)
-   ("C-c F" . jump-char-backward)))
-
 ;; Undo in way I understand
 (use-package undo-tree
   :diminish undo-tree-mode
-  :defer 10
+  :defer t
   :config
   (global-undo-tree-mode 1))
 
 ;; Swap windows in a predictable manner and enable winner-mode
 (use-package ace-window
+  :defer t
   :init
   (setq aw-keys '(?a ?s ?d ?f ?g ?h ?j ?k ?l)
         aw-char-position 'left
@@ -163,7 +156,8 @@
         aw-scope 'frame)
   (winner-mode 1)
   :bind (("M-o" . ace-window)
-         ("M-O" . ace-swap-window)))
+	 ("<f1>" . previous-buffer)
+	 ("<f2>" . next-buffer)))
 
 ;; Remove some of the modeline clutter
 (use-package diminish
@@ -211,23 +205,22 @@
   (setq marginalia-annotators
         '(marginalia-annotators-heavy marginalia-annotators-light)))
 
-;; Not sure what this does but sounds pretty fancy
-(use-package embark
-  :ensure t
-  :bind
-  (("C-." . embark-act)
-   ("C-;" . embark-dwim)
-   ("C-h B" . embark-bindings))
-  :init
-  (setq prefix-help-command #'embark-prefix-help-command)
-  :config
-  (add-to-list 'display-buffer-alist
-               '("\\`\\*Embark Collect \\(Live\\|Completions\\)\\*"
-                 nil
-                 (window-parameters (mode-line-format . none)))))
-
 (use-package all-the-icons-completion
   :init (all-the-icons-completion-marginalia-setup))
+
+;; Corfu for inline completion
+(use-package corfu
+  :config
+  (setq corfu-auto t)
+  (setq tab-always-indent 'complete)
+  (setq completion-cycle-threshold nil)
+  (global-corfu-mode))
+
+;; Help with keys
+(use-package which-key
+  :defer t
+  :config
+  (which-key-mode))
 
 ;; Better modeline
 (use-package mood-line
@@ -235,7 +228,7 @@
 
 ;; Better help
 (use-package helpful
-  :defer 30
+  :defer t
   :config
   (global-set-key (kbd "C-h f") #'helpful-callable)
   (global-set-key (kbd "C-h v") #'helpful-variable)
@@ -258,23 +251,17 @@
 (add-hook 'dired-mode-hook #'dired-hide-details-mode)
 (add-hook 'dired-mode-hook (lambda () (diminish 'all-the-icons-dired-mode)))
 
+;; Help me sort stuff
 (use-package dired-quick-sort
-  :ensure t
+  :defer t
   :config
   (dired-quick-sort-setup))
-
 
 ;; Fancy icons because I like shiny stuff
 (use-package all-the-icons-dired
   :defer t
   :init
   (add-hook 'dired-mode-hook 'all-the-icons-dired-mode))
-
-;; A nice and quick file browser
-(use-package dired-sidebar
-  :bind (("C-x C-n" . dired-sidebar-toggle-sidebar))
-  :ensure t
-  :commands (dired-sidebar-toggle-sidebar))
 
 ;; In case I fuck up and ruin my hard work
 (use-package magit
@@ -283,8 +270,19 @@
 
 
 ;;
-;; Writing stuff
+;; Editing and writing
 ;; ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+;; Smooth operator
+(global-set-key "\M-n" "\C-u1\C-v")
+(global-set-key "\M-p" "\C-u1\M-v")
+
+;; Some proper jumping
+(use-package jump-char
+  :defer t
+  :bind
+  (("C-c f" . jump-char-forward)
+   ("C-c b" . jump-char-backward)))
 
 ;; Splelling is hard. Let's get some hlep.
 (use-package ispell
@@ -304,7 +302,7 @@
 
 ;; Unfill mode
 (use-package unfill
-  :defer 10)
+  :defer t)
 
 ;; LaTeX rules!
 (use-package tex
@@ -324,19 +322,21 @@
 (use-package scratch)
 
 ;; I don't like typing stuff over and over again...
-(use-package yasnippet
-  :defer 5
-  :diminish yas-minor-mode
-  :config (yas-global-mode))
+(use-package tempel
+  :bind (("M-[" . tempel-complete) ;; Alternative tempel-expand
+         ("M-]" . tempel-insert)))
 
-(use-package yasnippet-snippets
-  :after yasnippet)
+;; Find tempo template file
+(defun wg/find-templates ()
+  "Edit tempel templates."
+  (interactive)
+  (find-file "~/.emacs.d/templates"))
+(global-set-key (kbd "C-c t") 'wg/find-templates)
 
 
 ;;
 ;; Org mode
 ;; ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
 
 ;; Let's get organized... Though mostly used for writing
 (use-package org
@@ -381,7 +381,10 @@
 		 ("\\subparagraph{%s}" . "\\subparagraph*{%s}")))
   (require 'ox-beamer)
   (add-to-list 'org-beamer-environments-extra
-	       '("onlyenv" "O" "\\begin{onlyenv}%a" "\\end{onlyenv}")))
+	       '("onlyenv" "O" "\\begin{onlyenv}%a" "\\end{onlyenv}"))
+
+  (setq temporary-file-directory "c:/wjbg/.temp/")
+  (setq org-preview-latex-default-process 'dvipng))
 
 (use-package visual-fill-column
   :hook (org-mode . wg/org-mode-visual-fill))
@@ -403,17 +406,17 @@
 
 ;; Org-roam - let's try this baby
 (use-package org-roam
-      :ensure t
-      :hook
-      (after-init . org-roam-mode)
-      :custom
-      (org-roam-directory (concat work-dir "notes/"))
-      :bind ( (("C-c n l" . org-roam-buffer-toggle)
-               ("C-c n f" . org-roam-node-find)
-               ("C-c n g" . org-roam-graph))
-              :map org-mode-map
-              (("C-c n i" . org-roam-node-insert))
-              (("C-c n I" . org-roam-insert-immediate))))
+  :ensure t
+  :hook
+  (after-init . org-roam-mode)
+  :custom
+  (org-roam-directory (concat work-dir "notes/"))
+  :bind ( (("C-c n l" . org-roam-buffer-toggle)
+           ("C-c n f" . org-roam-node-find)
+           ("C-c n g" . org-roam-graph))
+          :map org-mode-map
+          (("C-c n i" . org-roam-node-insert))
+          (("C-c n I" . org-roam-insert-immediate))))
 
 
 ;;
@@ -429,7 +432,13 @@
 	'(("http://rss.sciencedirect.com/publication/science/1359835X" Comp.A)
 	  ("http://rss.sciencedirect.com/publication/science/02663538" Comp.Sci.Tech.)
 	  ("http://rss.sciencedirect.com/publication/science/13598368" Comp.B)
-          ("https://journals.sagepub.com/action/showFeed?ui=0&mi=ehikzz&ai=2b4&jc=jtca&type=etoc&feed=rss" JTCM))))
+	  ("https://rss.sciencedirect.com/publication/science/02638223" JCS)
+          ("https://journals.sagepub.com/action/showFeed?ui=0&mi=ehikzz&ai=2b4&jc=jtca&type=etoc&feed=rss" JTCM)
+	  ("https://journals.sagepub.com/action/showFeed?ui=0&mi=ehikzz&ai=2b4&jc=jcma&type=etoc&feed=rss" JCM)
+	  ("https://www.tandfonline.com/feed/rss/tacm20" Adv.CM)
+	  ("https://data.4tu.nl/rss/portal_category/4tu/13630" 4TU.RD))
+	elfeed-search-title-max-width 120)
+  (add-hook 'elfeed-show-mode-hook 'toggle-truncate-lines))
 
 (use-package ivy-bibtex
   :defer t
@@ -449,22 +458,10 @@
 					      (start-process "open-pdf" "*open-pdf*"
 							     (concat program-files "SumatraPDF\\SumatraPDF.exe") fpath))))
 
-(use-package projectile
-  :defer t
-  :diminish projectile-mode
-  :init
-  (projectile-mode +1)
-  :bind (:map projectile-mode-map
-              ("C-c o" . projectile-command-map)))
 
 ;;
 ;; Python
 ;; ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-;; Company for code completion
-(use-package company
-  :ensure t
-  :pin melpa)
 
 ;; Virtual environments
 (use-package pyvenv
@@ -475,42 +472,10 @@
   (pyvenv-mode 1)
   (pyvenv-activate "~\\.venvs\\base"))
 
-;; Let's get some help, while coding: Language Server Protocol
-(use-package lsp-pyright
+(use-package eglot
   :ensure t
-  :bind (:map lsp-mode-map
-	      ("C-c C-d" . lsp-describe-thing-at-point))
-  :config
-  (setq lsp-keymap-prefix "C-l")
-  (with-eval-after-load 'lsp-mode
-  (add-hook 'lsp-mode-hook #'lsp-enable-which-key-integration))
-  :hook (python-mode . (lambda ()
-                          (require 'lsp-pyright)
-                          (lsp))))  ; or lsp-deferred
-
-(use-package lsp-ui
-  :ensure t
-  :config
-  (setq lsp-ui-doc-enable nil
-	lsp-ui-doc-delay 2
-	lsp-ui-peek-enable t
-	lsp-ui-peek-peek-height 20
-	lsp-ui-peek-fontify 'on-demand
-	lsp-ui-sideline-show-diagnostics t)
-  (define-key lsp-ui-mode-map
-    [remap xref-find-definitions] #'lsp-ui-peek-find-definitions)
-  (define-key lsp-ui-mode-map
-    [remap xref-find-references] #'lsp-ui-peek-find-references)
-  (add-hook 'lsp-mode-hook 'lsp-ui-mode))
-
-(use-package lsp-treemacs
   :defer t
-  :after lsp)
-
-;; optional if you want which-key integration
-(use-package which-key
-    :config
-    (which-key-mode))
+  :hook (python-mode . eglot-ensure))
 
 ;; And make use of a proper interpreter...
 (setq python-shell-interpreter "ipython"
@@ -518,9 +483,3 @@
 
 ;; (setenv "LANG" "en_US.UTF-8")
 (setenv "PYTHONIOENCODING" "utf-8")
-
-
-;;
-;; G-code
-;; ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-(add-hook 'gcode-mode-hook 'eldoc-mode)
