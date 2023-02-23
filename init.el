@@ -52,9 +52,12 @@
   (find-file (concat work-dir "private/passwords.org.gpg")))
 (global-set-key (kbd "C-c P") 'wg/find-passwords)
 
-
 ;; Prevent emacs from poluting the init file with customizations
 (setq custom-file (make-temp-file "emacs-custom"))
+
+;; Get rid of some annoyances
+(setq enable-recursive-minibuffers  t)
+(minibuffer-depth-indicate-mode 1)
 
 
 ;;
@@ -138,6 +141,25 @@
   :diminish all-the-icons-dired-mode
   :init (setq inhibit-compacting-font-caches t))
 
+;; Act like a God
+(use-package god-mode
+  :bind (("<escape>" . god-local-mode)
+         ("C-x C-1" . delete-other-windows)
+         ("C-x C-2" . split-window-below)
+         ("C-x C-3" . split-window-right)
+         ("C-x C-0" . delete-window)
+	 :map god-local-mode-map
+	 ("i" . god-local-mode)
+	 ("." . repeat)
+	 ("[" . backward-paragraph)
+	 ("]" . forward-paragraph)))
+
+(defun my-update-cursor ()
+  (setq cursor-type (if (or god-local-mode buffer-read-only) 'box 'bar)))
+
+(add-hook 'god-mode-enabled-hook 'my-update-cursor)
+(add-hook 'god-mode-disabled-hook 'my-update-cursor)
+
 ;; Undo in way I understand
 (use-package undo-tree
   :diminish undo-tree-mode
@@ -176,7 +198,6 @@
   (setq dashboard-startup-banner 'official
 	dashboard-items '((recents  . 15)
                           (bookmarks . 10))
-	dashboard-startup-banner 'logo
 	dashboard-center-content t
 	dashboard-set-heading-icons t
 	dashboard-set-navigator t
@@ -253,7 +274,7 @@
 
 ;; Help me sort stuff
 (use-package dired-quick-sort
-  :defer t
+  :defer 30
   :config
   (dired-quick-sort-setup))
 
@@ -276,6 +297,7 @@
 ;; Smooth operator
 (global-set-key "\M-n" "\C-u1\C-v")
 (global-set-key "\M-p" "\C-u1\M-v")
+(global-set-key (kbd "C-=") 'er/expand-region)
 
 ;; Some proper jumping
 (use-package jump-char
@@ -283,6 +305,17 @@
   :bind
   (("C-c f" . jump-char-forward)
    ("C-c b" . jump-char-backward)))
+
+;; Usefull functions that can act on a region.
+(use-package selected
+  :ensure t
+  :commands selected-minor-mode
+  :bind (:map selected-keymap
+              ("q" . selected-off)
+              ("u" . upcase-region)
+              ("d" . downcase-region)
+              ("w" . count-words-region)
+              ("m" . apply-macro-to-region-lines)))
 
 ;; Splelling is hard. Let's get some hlep.
 (use-package ispell
