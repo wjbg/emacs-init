@@ -141,25 +141,6 @@
   :diminish all-the-icons-dired-mode
   :init (setq inhibit-compacting-font-caches t))
 
-;; Act like a God
-(use-package god-mode
-  :bind (("<escape>" . god-local-mode)
-         ("C-x C-1" . delete-other-windows)
-         ("C-x C-2" . split-window-below)
-         ("C-x C-3" . split-window-right)
-         ("C-x C-0" . delete-window)
-	 :map god-local-mode-map
-	 ("i" . god-local-mode)
-	 ("." . repeat)
-	 ("[" . backward-paragraph)
-	 ("]" . forward-paragraph)))
-
-(defun my-update-cursor ()
-  (setq cursor-type (if (or god-local-mode buffer-read-only) 'box 'bar)))
-
-(add-hook 'god-mode-enabled-hook 'my-update-cursor)
-(add-hook 'god-mode-disabled-hook 'my-update-cursor)
-
 ;; Undo in way I understand
 (use-package undo-tree
   :diminish undo-tree-mode
@@ -195,9 +176,10 @@
 ;; Dashboard
 (use-package dashboard
   :init
-  (setq dashboard-startup-banner 'official
+  (setq dashboard-startup-banner 'logo
 	dashboard-items '((recents  . 15)
-                          (bookmarks . 10))
+                          (bookmarks . 10)
+			  (projects . 5))
 	dashboard-center-content t
 	dashboard-set-heading-icons t
 	dashboard-set-navigator t
@@ -289,6 +271,10 @@
   :defer t
   :bind (("C-x g" . magit-status)))
 
+;; Unzip files by pressing Z
+(eval-after-load "dired-aux"
+   '(add-to-list 'dired-compress-file-suffixes
+                 '("\\.zip\\'" ".zip" "unzip")))
 
 ;;
 ;; Editing and writing
